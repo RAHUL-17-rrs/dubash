@@ -1116,6 +1116,11 @@ button {
   gap: 24px;
   align-items: start;
 }
+/* Grid items default to min-width:auto, so a wide table or long word would push the column past a phone screen. */
+.wrap-grid > * {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
 .note h3 {
   font-size: 1.25rem;
 }

@@ -102,7 +102,7 @@ A held turn is **never spoken to the patient** until the doctor explicitly relea
 | Speech-to-text | **Prisma v3.0** (fallback **Prisma v2.5**) | Gnani Vachana API |
 | Text-to-speech | **Timbre v3.0** (fallback **Timbre v2.5**) | Gnani Vachana API |
 | Doctor's voice | **Vachana voice clone** (`vachana-vc-v1` + embeddings endpoint) | Gnani Vachana API |
-| Interpretation, teach-back, clinical note | **OpenAI GPT** (`gpt-4.1-mini` by default); also supports **Gnani Evon v3.3** self-hosted, or **Claude** | OpenAI / self-hosted / Anthropic |
+| Interpretation, teach-back, clinical note | **OpenAI GPT** (`gpt-4.1` by default); also supports **Gnani Evon v3.3** self-hosted, or **Claude** | OpenAI / self-hosted / Anthropic |
 
 The LLM is chosen by environment variables, in this priority: `EVON_BASE_URL` → `OPENAI_API_KEY` → `ANTHROPIC_API_KEY`.
 Every call uses strict JSON-schema output, so the code never parses free text.
@@ -165,7 +165,7 @@ GNANI_API_KEY=vach_...           # required for live mode (STT, TTS, voice clone
 
 # Interpreter model: set one
 OPENAI_API_KEY=sk-...
-OPENAI_MODEL=                    # optional, default gpt-4.1-mini
+OPENAI_MODEL=                    # optional, default gpt-4.1
 ANTHROPIC_API_KEY=
 LLM_MODEL=                       # optional Claude model override
 EVON_BASE_URL=                   # self-hosted Gnani Evon (OpenAI-compatible vLLM); takes priority when set
