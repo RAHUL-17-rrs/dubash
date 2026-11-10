@@ -2,7 +2,7 @@
 
 > *Dubash* (दुभाषिया): the interpreter who stands between two people who don't share a language.
 
-**Live demo:** _LIVE_URL_ · Built for the **Gnani Great Indian AI Internship Challenge** · #GnaniAI #GreatIndianAIInternshipChallenge
+**Live demo:** https://dubash-seven.vercel.app · Built for the **Gnani Great Indian AI Internship Challenge** · #GnaniAI #GreatIndianAIInternshipChallenge
 
 One phone lies on the consultation table. The doctor speaks English or Hinglish; the patient speaks Telugu, Tamil,
 Kannada, Hindi, Bengali, Malayalam, Marathi, Gujarati or Punjabi. Dubash listens, works out **who** spoke, interprets
