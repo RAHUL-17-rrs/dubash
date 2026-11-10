@@ -2,7 +2,7 @@
 // Take-home slip in the patient's language, with a picture card for anyone who cannot read it:
 // sunrise / sun / moon columns, drawn tablets (halves too), an empty or full plate for before / after food,
 // and one box per day for courses that end.
-import { LANGUAGES } from '@/lib/medical';
+import { LANGUAGES, dispense } from '@/lib/medical';
 
 export default function Slip({ takeHome: h, lang, onListen, qr }) {
   return (
@@ -42,11 +42,12 @@ export default function Slip({ takeHome: h, lang, onListen, qr }) {
       <p className="slip-next">{h.next_visit}</p>
 
       {h.medicines.some((m) => m.morning !== undefined) && <PillCard meds={h.medicines} />}
+      {h.medicines.some((m) => m.morning !== undefined) && <Chemist meds={h.medicines} />}
 
       {qr && (
         <div className="slip-qr">
           <img src={qr} width="132" height="132" alt="QR code that opens this slip, with audio, on another phone" />
-          <span lang="en">Scan with any phone to hear this slip again at home.</span>
+          <span lang="en">Scan with any phone at home: hear this slip again, ask it a question, or check a medicine pack against it.</span>
         </div>
       )}
     </article>
@@ -89,6 +90,37 @@ function PillCard({ meds }) {
             <td>{m.days ? <Days n={Number(m.days)} /> : <span className="ongoing" title="Keep taking" />}</td>
           </tr>
         ))}
+      </tbody>
+    </table>
+  );
+}
+
+// The same slip, read by the person behind the pharmacy counter: English, and the quantity worked out in code
+// from the picture-card counts (tablets a day x days), so a 5-day course is not handed over as one strip of 10 or of 3.
+function Chemist({ meds }) {
+  return (
+    <table className="chemist" lang="en">
+      <caption>For the chemist</caption>
+      <thead>
+        <tr>
+          <th scope="col">Medicine</th>
+          <th scope="col">A day</th>
+          <th scope="col">Days</th>
+          <th scope="col">Give</th>
+        </tr>
+      </thead>
+      <tbody>
+        {meds.map((m) => {
+          const d = dispense(m);
+          return (
+            <tr key={m.name}>
+              <th scope="row">{m.name}</th>
+              <td>{d.perDay || '—'}</td>
+              <td>{d.days || 'ongoing'}</td>
+              <td>{d.total ?? 'as advised'}</td>
+            </tr>
+          );
+        })}
       </tbody>
     </table>
   );

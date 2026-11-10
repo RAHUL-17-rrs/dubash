@@ -14,7 +14,17 @@ Live: https://dubash-seven.vercel.app (auto-deploys from GitHub main)
 - [x] Teach-back, wrap-up note with turn citations, take-home slip + picture card + QR (/slip, data in URL fragment)
 - [x] Zero-key scripted demo (12 turns), landing page, Playwright shots (scripts/shots.mjs), deployed
 
+- [x] Branch `feat/features-motion` (not merged, not deployed): read-back, clarify-instead-of-guess, pinned patient facts,
+      family turns, quick phrases, "didn't understand", speak-to-start, teach-back rounds, chemist line, ask-the-slip,
+      strip check, returning-patient slip scan, Indic-digit dose lock; landing/consult motion per docs/research.md;
+      README rewrite; docs/pitch.md
+
 ## Open (needs user)
+- [ ] Run the new routes against real keys before merging: /api/detect, /api/simplify, /api/ask, /api/strip, and the new
+      `facts` / `clarify` interpreter fields (exercised so far by the scripted demo, unit tests, and scripts/e2e-mock.mjs
+      with stand-in providers; never with real Prisma / Timbre / LLM output)
+- [ ] Native-speaker review of lib/phrases.js (fixed phrases in 9 languages)
+- [ ] Rate-limit the API routes (Vercel firewall rule) before wider sharing
 - [x] Set GNANI_API_KEY and OPENAI_API_KEY in Vercel; real consult tested end to end on the live site
 - [x] Baked demo audio with Gnani Timbre (14 files)
 - [ ] Native Telugu speaker review of lib/demo.js lines
