@@ -1,6 +1,6 @@
 # Dubash: doctor-patient interpreter (Gnani Great Indian AI Internship Challenge, due 2026-11-10 23:59 IST)
 
-Live: see README
+Live: https://dubash-seven.vercel.app (auto-deploys from GitHub main)
 
 ## Constraints
 - Gnani API platform only (Inya Agent Builder out of scope). Synthetic data only. Evon not on API (self-host).
@@ -15,8 +15,8 @@ Live: see README
 - [x] Zero-key scripted demo (12 turns), landing page, Playwright shots (scripts/shots.mjs), deployed
 
 ## Open (needs user)
-- [ ] Set GNANI_API_KEY and ANTHROPIC_API_KEY (or EVON_*) in Vercel, then test a real consult end to end
-- [ ] Run `GNANI_API_KEY=... node scripts/bake-demo.mjs` then redeploy so the demo plays real Gnani voices
+- [x] Set GNANI_API_KEY and OPENAI_API_KEY in Vercel; real consult tested end to end on the live site
+- [x] Baked demo audio with Gnani Timbre (14 files)
 - [ ] Native Telugu speaker review of lib/demo.js lines
 - [ ] Verify cited stats (Delhi 75.2%/1.8%, 2026 preprint 33% vs 5%, JAMA IM 2019) before the write-up
 - [ ] Test Hinglish patients in hands-free mode (language-based speaker detection may mislabel them)
