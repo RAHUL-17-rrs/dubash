@@ -6,7 +6,7 @@
 **One-page pitch:** [docs/pitch.md](docs/pitch.md) · **Design research:** [docs/research.md](docs/research.md)
 
 One phone lies on the consultation table. The doctor speaks English or Hinglish; the patient speaks Telugu, Tamil,
-Kannada, Hindi, Bengali, Malayalam, Marathi, Gujarati or Punjabi. Dubash listens, works out **who** spoke, interprets
+Kannada, Hindi, Bengali, Malayalam, Marathi, Gujarati, Punjabi or Hinglish. Dubash listens, works out **who** spoke, interprets
 both ways, says the doctor's words to the patient **in the doctor's own (cloned, consented) voice**, and **checks every
 dose before it reaches the patient**. At the end it writes a cited clinical note and a take-home prescription slip
 (a *parchi*) in the patient's language. The slip then keeps working after the visit: at home it answers the family's
@@ -60,6 +60,7 @@ item in `tasks/todo.md`.)
 |---|---|---|
 | 1 | **Live consult screen** | Split screen: a green patient half (labelled in the patient's own script) and a blue doctor half. On a phone the patient half is rotated 180° so each person reads their own side across the table. Tap-to-talk on each side sends by itself when the speaker pauses; tapping a mic also cuts off Dubash if it is still talking. Hands-free mode detects voice automatically. |
 | 2 | **Speaker by language** | Prisma v3.0 is given both languages (e.g. `en-IN,te-IN`) and reports which one it heard. The patient's language means the patient spoke; anything else is the doctor. No speaker-ID model needed. |
+| 2b | **Hinglish** | A patient language of its own: Gnani has no Hinglish code, so Prisma `en-IN` transcribes it in Roman script (the way people type it), Timbre's `hi-IN` voice speaks it, and the interpreter writes Roman-script Hinglish. In auto mode it is detected as `hi-IN`, then re-heard with `en-IN` so the transcript stays in Roman script. Use the two mic buttons: a doctor who also speaks Hinglish can be mistaken for the patient. |
 | 3 | **Speak to start** | Not sure which language the patient speaks? They say anything, Prisma (`indic-auto`) names the language, and the consult is set up in it. |
 | 4 | **Faithful interpretation** | First person, spoken register, digits kept. Patient → doctor turns also surface **red flags** (chest pain, bleeding, pregnancy…). |
 | 5 | **Safety layer** | Dose lock, read-back, plain-language rewrite of shorthand, back-translation, holds on low confidence or clashes with what the patient said earlier. [Details below.](#safety-layer) |
@@ -67,7 +68,7 @@ item in `tasks/todo.md`.)
 | 7 | **It asks instead of guessing** | When an instruction could mean two things, the held turn comes back with a question and both readings as buttons. The doctor taps the one they meant. |
 | 8 | **Pinned patient facts** | Allergies, current medicines, conditions and pregnancy are pulled from what the patient says and stay pinned above the transcript ("Keep in mind"). The clash check reads this list, so it still works in a long consult after the allergy has scrolled out of the model's recent history. |
 | 9 | **Family turns** | A son or daughter often speaks for the patient. One toggle on the patient's half marks the next turns as "Family", so they are interpreted as spoken ("my mother has…") and the note records who said what. |
-| 10 | **Quick phrases** | Six everyday questions (since when, where does it hurt, fever, allergy, current medicines, say that again). Fixed wording in all nine languages: no model call, so nothing to mistranslate and nothing to wait for. |
+| 10 | **Quick phrases** | Six everyday questions (since when, where does it hurt, fever, allergy, current medicines, say that again). Fixed wording in every patient language: no model call, so nothing to mistranslate and nothing to wait for. |
 | 11 | **"I didn't understand"** | A button on the patient's half, in their script. Dubash says the last instruction again in shorter, plainer sentences, slower. The simpler wording goes through the same dose lock; if a number moved, the original wording is replayed slowly instead. |
 | 12 | **Doctor's own voice** | The doctor records 5–30 s of consented speech. Gnani's voice-clone endpoint turns it into a speaker embedding, and every doctor → patient line is spoken in that voice, in the patient's language. |
 | 13 | **Teach-back, in rounds** | The patient retells the plan in their own words. Each plan item is marked understood / partial / missed / wrong and the gaps are re-explained with audio. Then **Ask again** re-checks only the missed items, or **Ask just this** has Dubash put one short question to the patient about one item. The score ("7 of 7 understood, round 2") goes on the clinical note. |
@@ -194,7 +195,7 @@ lib/
   prompts.js             prompts + JSON schemas: interpret, teach-back, note, simplify, ask, strip
   turn.js                interpret + dose lock + retry + hold / read-back decision
   medical.js             languages, voices, medical keyterms, shorthand, dose lock, chemist quantities
-  phrases.js             fixed phrases in nine languages (quick phrases, button labels, "ask your doctor")
+  phrases.js             fixed phrases in every patient language (quick phrases, button labels, "ask your doctor")
   demo.js                scripted Telugu consult for the zero-key demo
   slip.js                slip <-> URL fragment encoding, ask-the-slip grounding, strip matching
   verify.js              wrap-up grounding: numbers on note/slip must have been said in the cited turns
@@ -308,7 +309,7 @@ Stated plainly, because this is a safety tool:
 - **Not yet run against real models:** what Prisma, Timbre and the interpreter actually return for the newest routes
   (`/api/detect`, `/api/simplify`, `/api/ask`, `/api/strip`) and for the new `facts` and `clarify` fields. The stand-ins
   answer the way the prompts ask; real models may not, so run one session with real Gnani and LLM keys before relying on them.
-- **Awaiting native-speaker review:** the Telugu demo script and the fixed phrases in all nine languages (`lib/phrases.js`).
+- **Awaiting native-speaker review:** the Telugu demo script and the fixed phrases in every patient language (`lib/phrases.js`).
 
 ## Limitations and out of scope
 

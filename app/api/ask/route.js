@@ -3,6 +3,7 @@ import { json } from '@/lib/llm';
 import { askPrompt } from '@/lib/prompts';
 import { groundAnswer } from '@/lib/slip';
 import { phrases } from '@/lib/phrases';
+import { sttCode } from '@/lib/medical';
 import { route, parse } from '@/lib/http';
 
 export const maxDuration = 60;
@@ -16,7 +17,7 @@ export const POST = route(async (req) => {
   if (!slip?.medicines) return Response.json({ error: 'No slip' }, { status: 400 });
   let question = (f.get('question') || '').trim();
   const audio = f.get('audio');
-  if (audio && typeof audio !== 'string') question = (await transcribe(audio, { languages: [lang] })).text;
+  if (audio && typeof audio !== 'string') question = (await transcribe(audio, { languages: [sttCode(lang)] })).text;
   if (!question) return Response.json({ empty: true });
   const out = await json({ ...askPrompt({ question: question.slice(0, 600), slip, patientLang: lang }), maxTokens: 600 });
   const { found, answer } = groundAnswer(out, slip, phrases(lang).askDoctor);

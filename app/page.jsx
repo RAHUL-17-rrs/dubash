@@ -6,7 +6,9 @@ import { DEMO } from '@/lib/demo';
 import { LANGUAGES, dispense } from '@/lib/medical';
 
 const hold = DEMO.turns.find((t) => t.text.includes('Hold the metformin'));
-const natives = Object.entries(LANGUAGES).filter(([c]) => c !== 'en-IN');
+const patientLangs = Object.entries(LANGUAGES).filter(([c]) => c !== 'en-IN');
+// The roll shows the nine scripts; Hinglish is written in Roman script, so it is named in the label instead.
+const natives = patientLangs.filter(([, l]) => !l.mixesEnglish);
 const azithro = DEMO.note.take_home.medicines.find((m) => m.name.startsWith('Azithromycin'));
 
 /* Motion map (transform and opacity only; all of it off under prefers-reduced-motion)
@@ -46,7 +48,7 @@ export default function Home() {
             Put one phone between doctor and patient. Dubash hears who is speaking, interprets both ways in ten Indian languages, and will not
             pass on a dose it cannot verify.
           </p>
-          <p className="langroll" aria-label={`Patient languages: ${natives.map(([, l]) => l.name).join(', ')}`}>
+          <p className="langroll" aria-label={`Patient languages: ${patientLangs.map(([, l]) => l.name).join(', ')}`}>
             <span className="k">English ⇄</span>
             <span className="roll" aria-hidden="true">
               <span className="roll-in" style={{ '--n': natives.length }}>

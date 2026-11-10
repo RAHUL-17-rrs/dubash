@@ -770,11 +770,15 @@ function Setup({ lang, setLang, voice, setVoice, status, mic, cloneState, setClo
             .map(([code, l]) => (
               <button key={code} type="button" className={`lang ${lang === code ? 'sel' : ''}`} onClick={() => setLang(code)} aria-pressed={lang === code}>
                 <span lang={code.slice(0, 2)}>{l.native}</span>
-                <small>{l.name}</small>
+                <small>{l.mixesEnglish ? 'Hindi + English' : l.name}</small>
               </button>
             ))}
         </div>
-        <p className="hint">Prisma listens for English and this language only, so it can tell who is speaking.</p>
+        <p className="hint">
+          {LANGUAGES[lang]?.mixesEnglish
+            ? 'Hinglish mixes in English, so Dubash cannot always tell the doctor from the patient by language: use the two mic buttons rather than hands-free. Patient text is in Roman script.'
+            : 'Prisma listens for English and this language only, so it can tell who is speaking.'}
+        </p>
         <div className="detect">
           <button type="button" className={`btn small ${detecting ? 'rec' : 'ghost'}`} disabled={!live} onClick={detecting ? () => mic.stop() : onDetect}>
             {detecting ? 'Stop' : 'Not sure? Let the patient speak'}
