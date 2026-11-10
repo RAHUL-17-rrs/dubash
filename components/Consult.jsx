@@ -15,6 +15,10 @@ const CLONE_SCRIPT =
 
 const STEPS = { listen: 'Hearing', interpret: 'Interpreting', voice: 'Voicing' };
 
+// A turn counts once it reached the other person: done, not discarded, and not still held for the doctor.
+// Held turns stay out of the note, the slip and teach-back until the doctor speaks them anyway.
+const released = (t) => t.status === 'done' && !t.discarded && !t.hold;
+
 export default function Consult({ demo }) {
   const [phase, setPhase] = useState(demo ? 'live' : 'setup');
   const [lang, setLang] = useState(demo ? DEMO.patientLang : 'te-IN');
@@ -95,7 +99,7 @@ export default function Consult({ demo }) {
     const history = turnsRef.current
       .filter((t) => t.status === 'done' && !t.discarded)
       .slice(-8)
-      .map((t) => ({ id: t.id, speaker: t.speaker, text: t.text, translation: t.interp.translation }));
+      .map((t) => ({ id: t.id, speaker: t.speaker, text: t.text, translation: t.hold ? '(held: not said to the other person)' : t.interp.translation }));
     const fd = new FormData();
     if (wav) fd.append('audio', wav, 'turn.wav');
     if (text) fd.append('text', text);
@@ -112,8 +116,14 @@ export default function Consult({ demo }) {
       patch(id, { ...j, status: 'done' });
       play(j.audio);
     } catch (e) {
-      patch(id, { status: 'error', error: e.message });
+      patch(id, { status: 'error', error: e.message, retry: { wav, text, side } });
     }
+  }
+
+  // A failed turn (network, provider busy) keeps its audio, so the doctor does not have to say it again.
+  function retryTurn(t) {
+    setTurns((ts) => ts.filter((x) => x.id !== t.id));
+    sendTurn(t.retry);
   }
 
   // Patients ask "say that again" all the time: replay the same audio, no new translation, same words.
@@ -160,7 +170,7 @@ export default function Consult({ demo }) {
 
   // ---------- teach-back ----------
   const instructions = () =>
-    turnsRef.current.filter((t) => t.status === 'done' && !t.discarded && t.speaker === 'doctor').map((t) => t.interp.plain_source || t.text);
+    turnsRef.current.filter((t) => released(t) && t.speaker === 'doctor').map((t) => t.interp.plain_source || t.text);
 
   function startTeach() {
     setFocus(null);
@@ -205,7 +215,9 @@ export default function Consult({ demo }) {
     await mic.setHandsFree(false);
     if (demo) return setWrap({ status: 'done', ...verifyWrap(DEMO.note, DEMO.turns.map((t, i) => ({ id: `t${i + 1}`, text: t.text, plain: t.interp?.plain_source }))) });
     setWrap({ status: 'writing' });
-    const done = turnsRef.current.filter((t) => t.status === 'done' && !t.discarded);
+    const done = turnsRef.current.filter(released);
+    const leftOut = turnsRef.current.filter((t) => t.status === 'done' && !t.discarded && t.hold).map((t) => t.id);
+    if (!done.length) return setWrap({ status: 'error', error: 'Nothing has been said to the patient yet.' });
     try {
       const r = await fetch('/api/note', {
         method: 'POST',
@@ -218,7 +230,7 @@ export default function Consult({ demo }) {
       });
       const j = await r.json();
       if (!r.ok) throw new Error(j.error);
-      setWrap({ status: 'done', ...j });
+      setWrap({ status: 'done', ...j, leftOut });
     } catch (e) {
       setWrap({ status: 'error', error: e.message });
     }
@@ -298,7 +310,12 @@ export default function Consult({ demo }) {
     );
 
   const done = turns.filter((t) => t.status === 'done' && !t.discarded);
+  const said = turns.filter(released);
+  const meds = medicinesSoFar(said);
   const last = turns.at(-1);
+  // The patient half keeps the last thing the patient actually heard; a held or failed turn never blanks it.
+  const shown = [...turns].reverse().find((t) => t.status === 'pending' || released(t));
+  const checking = last?.status === 'done' && last.hold && !last.discarded;
   const flags = [...new Set(done.flatMap((t) => t.interp.red_flags))];
   const L = LANGUAGES[lang];
   const patientListening = teach?.status === 'listening' || mic.side === 'patient';
@@ -311,7 +328,7 @@ export default function Consult({ demo }) {
           <div className="p-head">
             <span className="p-lang">{L.native}</span>
           </div>
-          <PatientView turn={last} focus={focus} />
+          <PatientView turn={shown} focus={focus} checking={checking} />
           <div className="p-actions">
             {done.some((t) => t.speaker === 'doctor' && !t.hold) && (
               <button className="again" onClick={repeatLast} aria-label={`${L.again} (repeat what the doctor said)`}>
@@ -354,10 +371,10 @@ export default function Consult({ demo }) {
               <input type="checkbox" checked={table} onChange={(e) => setTable(e.target.checked)} />
               <span>Flip patient side</span>
             </label>
-            <button className="btn small ghost" onClick={startTeach} disabled={!done.some((t) => t.speaker === 'doctor') || (demo && demoStep < DEMO.turns.length)}>
+            <button className="btn small ghost" onClick={startTeach} disabled={!said.some((t) => t.speaker === 'doctor') || (demo && demoStep < DEMO.turns.length)}>
               Teach-back
             </button>
-            <button className="btn small" onClick={wrapUp} disabled={!done.length || (demo && demoStep <= DEMO.turns.length)}>
+            <button className="btn small" onClick={wrapUp} disabled={!said.length || (demo && demoStep <= DEMO.turns.length)}>
               Wrap up
             </button>
           </div>
@@ -404,6 +421,20 @@ export default function Consult({ demo }) {
           </aside>
         )}
 
+        {meds.length > 0 && (
+          <aside className="meds" aria-label="Medicines so far">
+            <strong>Medicines so far</strong>
+            <ul>
+              {meds.map((m) => (
+                <li key={m.name}>
+                  <b>{m.name}</b> {[sameStrength(m.name, m.dose) ? '' : m.dose, m.frequency, m.timing, m.duration].filter(Boolean).join(', ')}{' '}
+                  <span className="cite">{m.id}</span>
+                </li>
+              ))}
+            </ul>
+          </aside>
+        )}
+
         <ol className="turns" ref={listRef} aria-live="polite">
           {turns.length === 0 && (
             <li className="empty">
@@ -411,7 +442,7 @@ export default function Consult({ demo }) {
             </li>
           )}
           {turns.map((t) => (
-            <Turn key={t.id} t={t} lang={lang} onSpeak={() => speakAnyway(t)} onDiscard={() => patch(t.id, { discarded: true, hold: false })} />
+            <Turn key={t.id} t={t} lang={lang} onSpeak={() => speakAnyway(t)} onDiscard={() => patch(t.id, { discarded: true, hold: false })} onRetry={() => retryTurn(t)} />
           ))}
           {teach && <TeachBack teach={teach} onReExplain={reExplain} />}
         </ol>
@@ -526,14 +557,22 @@ function Setup({ lang, setLang, voice, setVoice, status, mic, cloneState, setClo
   );
 }
 
-function PatientView({ turn, focus }) {
+function PatientView({ turn, focus, checking }) {
+  // While the doctor reviews a held turn, the patient sees a quiet "working" mark, never the unchecked words.
+  const wait = checking && (
+    <span className="dots small" aria-label="The doctor is checking">
+      <i />
+      <i />
+      <i />
+    </span>
+  );
   if (focus)
     return (
       <div className="p-main">
         <p className="p-big">{focus}</p>
       </div>
     );
-  if (!turn) return <div className="p-main" />;
+  if (!turn) return <div className="p-main">{wait}</div>;
   if (turn.status === 'pending')
     return (
       <div className="p-main">
@@ -552,7 +591,8 @@ function PatientView({ turn, focus }) {
         <span className="p-from" aria-hidden>
           <DoctorIcon />
         </span>
-        <p className="p-big">{turn.hold ? '…' : turn.interp.translation}</p>
+        <p className="p-big">{turn.interp.translation}</p>
+        {wait}
       </div>
     );
   return (
@@ -561,11 +601,12 @@ function PatientView({ turn, focus }) {
       <span className="p-check" aria-hidden>
         ✓
       </span>
+      {wait}
     </div>
   );
 }
 
-function Turn({ t, lang, onSpeak, onDiscard }) {
+function Turn({ t, lang, onSpeak, onDiscard, onRetry }) {
   const who = t.speaker === 'doctor' ? 'Doctor' : t.speaker === 'patient' ? 'Patient' : 'Someone';
   if (t.status === 'pending')
     return (
@@ -580,6 +621,11 @@ function Turn({ t, lang, onSpeak, onDiscard }) {
       <li className="turn error">
         <div className="who">Not interpreted</div>
         <p className="said">{t.error}</p>
+        {t.retry && (
+          <button className="btn small ghost" onClick={onRetry}>
+            Try again
+          </button>
+        )}
       </li>
     );
   const i = t.interp;
@@ -722,7 +768,9 @@ function Wrap({ wrap, lang, demo, onClose, onRead }) {
   const [qr, setQr] = useState(null);
   useEffect(() => {
     if (wrap.status !== 'done') return;
-    encodeSlip({ l: lang, h: wrap.take_home, d: demo ? 1 : 0 })
+    // The check fields are for the doctor; the patient's QR carries only the slip.
+    const h = { ...wrap.take_home, medicines: wrap.take_home.medicines.map(({ unsaid, unsourced, ...m }) => m) };
+    encodeSlip({ l: lang, h, d: demo ? 1 : 0 })
       .then((code) => QRCode.toDataURL(`${location.origin}/slip#${code}`, { margin: 1, width: 264, errorCorrectionLevel: 'L', color: { dark: '#1a1c2e', light: '#fbeef0' } }))
       .then(setQr)
       .catch(() => setQr(null));
@@ -781,6 +829,9 @@ function Wrap({ wrap, lang, demo, onClose, onRead }) {
               )}
               <h4>Follow-up</h4>
               <p>{wrap.note.follow_up}</p>
+              {wrap.leftOut?.length > 0 && (
+                <p className="hint">Left out: {wrap.leftOut.join(' ')}, still held and never said to the patient.</p>
+              )}
               <p className="hint">Each line cites the turns it came from. Lines without a valid citation, and numbers not said in the cited turns, are flagged for review.</p>
             </article>
             <div className="slip-col">
@@ -850,3 +901,24 @@ function DoctorIcon() {
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 const sec = (ms) => `${(ms / 1000).toFixed(1)}s`;
 const norm = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+
+// One line per drug from the doctor's released turns; a later mention of the same drug replaces the earlier one.
+function medicinesSoFar(turns) {
+  const byDrug = new Map();
+  for (const t of turns) {
+    if (t.speaker !== 'doctor') continue;
+    for (const m of t.interp.medicines || []) {
+      const key = String(m.name).toLowerCase().match(/[a-z]+/)?.[0];
+      if (key) byDrug.set(key, { ...m, id: t.id });
+    }
+  }
+  return [...byDrug.values()];
+}
+
+// "Dolo 650" with dose "650 mg" says the strength twice; keep the dose only when it adds something (e.g. "1 tablet").
+function sameStrength(name, dose) {
+  const nums = (s) => String(s).match(/\d+(?:\.\d+)?/g) || [];
+  const inName = new Set(nums(name));
+  const n = nums(dose);
+  return n.length > 0 && n.every((x) => inName.has(x));
+}

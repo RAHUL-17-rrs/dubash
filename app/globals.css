@@ -1478,3 +1478,52 @@ button {
   border-radius: 4px;
   white-space: nowrap;
 }
+
+/* Running medicine list for the doctor, from released doctor turns only (held turns never appear). */
+.meds {
+  margin: 8px var(--gut) 0;
+  background: var(--leaf-2);
+  border-left: 4px solid var(--leaf);
+  padding: 8px 12px;
+  font-size: 0.9rem;
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+}
+.meds strong {
+  color: var(--leaf);
+  white-space: nowrap;
+}
+.meds ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 16px;
+  min-width: 0;
+}
+@media (max-width: 600px) {
+  .meds {
+    font-size: 0.82rem;
+    padding: 6px 10px;
+  }
+  .meds ul {
+    max-height: 2.9em;
+    overflow-y: auto;
+  }
+}
+
+/* Patient half while the doctor reviews a held turn: a quiet mark under the last thing they heard. */
+.dots.small {
+  margin-top: 14px;
+  gap: 5px;
+  color: var(--leaf);
+}
+.dots.small i {
+  width: 6px;
+  height: 6px;
+}
+.field .hint {
+  margin-top: 10px;
+}

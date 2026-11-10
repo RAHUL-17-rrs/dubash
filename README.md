@@ -52,6 +52,8 @@ Dubash is built around that failure mode. It doesn't just translate; it refuses 
 | 7 | **Wrap-up** | An English clinical note where **every line cites the turn it came from** (and code verifies the citations exist), plus a take-home slip in the patient's language (every number on both is checked against what was actually said): medicines, how to take them, tests, warning signs, next visit. It comes with audio, a picture card and a QR code that opens the slip on the patient's phone. |
 | 8 | **Zero-key demo** | A scripted 12-turn Telugu consultation runs through the exact same UI, with pre-baked Gnani voices, so anyone can try it without a microphone or keys. |
 | 9 | **Latency chips** | Each turn shows how long STT, interpretation and voice took. |
+| 10 | **Medicines so far** | A running list of every medicine the doctor has prescribed, from released turns only, so a held prescription never shows up as given. |
+| 11 | **Try again** | A turn that fails (network, provider busy) keeps its audio; one tap re-sends it instead of making the doctor repeat themselves. |
 
 ## How a turn works
 
@@ -95,7 +97,7 @@ All of this happens in **one request** to `POST /api/turn`:
 
 | **Wrap-up grounding** | Every number the model writes into the clinical note or the take-home slip (doses, counts, days, review dates) must appear in the turns that line cites. Slip lines are checked against the note line for the same drug. Done in code (`lib/verify.js`), not by a second model call. | Flagged in red to the doctor ("Check before printing"), naming the number and the turn. |
 
-A held turn is **never spoken to the patient** until the doctor explicitly releases it, and nothing the model invents at wrap-up reaches the printed slip unflagged.
+A held turn is **never spoken to the patient**, never counted in teach-back and never written into the note or slip until the doctor explicitly releases it (the patient's screen keeps the last thing they actually heard), and nothing the model invents at wrap-up reaches the printed slip unflagged.
 
 ## Models used
 

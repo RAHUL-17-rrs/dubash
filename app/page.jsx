@@ -117,6 +117,20 @@ export default function Home() {
               unspoken and shows the doctor what she said. Garbled or guessed turns are held the same way.
             </p>
           </article>
+          <article>
+            <h3>Held means held</h3>
+            <p>
+              A held turn is never spoken, never counted in teach-back and never written on the take-home slip, unless the doctor sends it.
+              The patient’s screen keeps the last thing they actually heard.
+            </p>
+          </article>
+          <article>
+            <h3>The slip is checked too</h3>
+            <p>
+              Every dose, count and day on the clinical note and the slip must have been said in the turn it cites. If the slip says 2 times
+              where the doctor said 3, the doctor sees it before printing.
+            </p>
+          </article>
           <article className="wide">
             <h3>Teach-back</h3>
             <p>
@@ -143,8 +157,8 @@ export default function Home() {
             <span className="n">2</span>
             <h3>Interpret and check</h3>
             <p>
-              Gnani’s open Evon v3.3 when self-hosted, Claude otherwise. Plain-language rewrite, translation, back-translation, red flags, then the
-              dose lock in code.
+              OpenAI GPT-4.1 here; Gnani’s open Evon v3.3 when self-hosted. Plain-language rewrite, translation, back-translation, red flags,
+              then the dose lock in code.
             </p>
           </li>
           <li>

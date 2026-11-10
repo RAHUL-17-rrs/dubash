@@ -105,6 +105,8 @@ export function useMic(onUtterance) {
 
   async function setHandsFree(on) {
     if (on && !(await open())) return;
+    // Safari/iOS can hand back a suspended context after the permission prompt; then hands-free would hear nothing.
+    if (on) await io.current.ctx.resume();
     Object.assign(v.current, { handsFree: on, inSpeech: false, chunks: [], run: 0 });
     setUi((u) => ({ ...u, handsFree: on }));
   }
