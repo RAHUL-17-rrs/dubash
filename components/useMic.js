@@ -16,13 +16,14 @@ const HANG_MS = 750; // this much quiet closes it
 const MIN_VOICE_MS = 400; // shorter blips (coughs, taps) are dropped
 const MAX_MS = 28000; // Prisma REST takes 30 s per clip
 const PRE_FRAMES = 10; // 300 ms pre-roll so first syllables are not clipped
+const TAP_HANG_MS = 1500; // tap-to-talk sends by itself after this much quiet following speech
 
 export function useMic(onUtterance) {
   const cb = useRef(onUtterance);
   cb.current = onUtterance;
   const io = useRef(null);
   const v = useRef(fresh());
-  const [ui, setUi] = useState({ open: false, handsFree: false, side: null, voiced: false, level: 0, error: '' });
+  const [ui, setUi] = useState({ open: false, handsFree: false, side: null, voiced: false, heard: false, level: 0, error: '' });
 
   function fresh() {
     return { handsFree: false, side: null, paused: false, frame: [], pre: [], chunks: [], run: 0, inSpeech: false, voiceMs: 0, quietMs: 0, totalMs: 0, floor: 0.008, tick: 0 };
@@ -57,19 +58,24 @@ export function useMic(onUtterance) {
     if (n < (rate * FRAME_MS) / 1000) return;
     const frame = concat(s.frame);
     s.frame = [];
-    if (s.paused) return;
+    // Paused while Dubash speaks, so hands-free does not interpret its own voice. A tap is deliberate: keep it.
+    if (s.paused && !s.side) return;
 
     let sum = 0;
     for (let i = 0; i < frame.length; i++) sum += frame[i] * frame[i];
     const rms = Math.sqrt(sum / frame.length);
     const voiced = rms > Math.max(0.012, s.floor * 2.8);
-    if (++s.tick % 4 === 0) setUi((u) => ({ ...u, level: Math.min(1, rms * 12), voiced: s.inSpeech || Boolean(s.side) }));
+    if (++s.tick % 4 === 0) setUi((u) => ({ ...u, level: Math.min(1, rms * 12), voiced: s.inSpeech || Boolean(s.side), heard: s.voiceMs >= MIN_VOICE_MS }));
 
     if (s.side) {
-      // tap-to-talk: keep everything until stop()
+      // tap-to-talk: keep everything; send on a second tap, or by itself once the speaker pauses after talking
       s.chunks.push(frame);
       s.totalMs += FRAME_MS;
-      if (s.totalMs >= MAX_MS) stop();
+      if (voiced) {
+        s.voiceMs += FRAME_MS;
+        s.quietMs = 0;
+      } else s.quietMs += FRAME_MS;
+      if (s.totalMs >= MAX_MS || (s.voiceMs >= MIN_VOICE_MS && s.quietMs >= TAP_HANG_MS)) stop();
       return;
     }
     if (!s.handsFree) return;
@@ -114,8 +120,8 @@ export function useMic(onUtterance) {
   async function start(side) {
     if (!(await open())) return;
     await io.current.ctx.resume();
-    Object.assign(v.current, { side, chunks: [], totalMs: 0, inSpeech: false });
-    setUi((u) => ({ ...u, side }));
+    Object.assign(v.current, { side, chunks: [], totalMs: 0, voiceMs: 0, quietMs: 0, inSpeech: false });
+    setUi((u) => ({ ...u, side, heard: false }));
   }
 
   function stop() {
@@ -123,8 +129,9 @@ export function useMic(onUtterance) {
     const side = s.side;
     if (!side) return;
     const chunks = s.chunks;
-    Object.assign(s, { side: null, chunks: [], totalMs: 0 });
-    setUi((u) => ({ ...u, side: null, voiced: false }));
+    Object.assign(s, { side: null, chunks: [], totalMs: 0, voiceMs: 0, quietMs: 0 });
+    setUi((u) => ({ ...u, side: null, voiced: false, heard: false }));
+    // Always sent, even if the level meter heard nothing: a quiet mic can still be clear to Prisma.
     if (chunks.length * FRAME_MS >= 300) cb.current(toWav(concat(chunks), io.current.ctx.sampleRate), side);
   }
 

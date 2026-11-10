@@ -1527,3 +1527,79 @@ button {
 .field .hint {
   margin-top: 10px;
 }
+
+/* ---------- who is who: doctor is carbon blue, patient is leaf green, everywhere ---------- */
+.role {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 800;
+  border-radius: 999px;
+  padding: 4px 12px 4px 8px;
+}
+.role small {
+  font-weight: 600;
+  opacity: 0.8;
+}
+.role.doctor {
+  background: var(--carbon);
+  color: #fff;
+  font-size: 0.9rem;
+}
+.role.patient {
+  background: var(--leaf);
+  color: #fff;
+  font-size: 1.05rem;
+}
+.role.patient small {
+  font-size: 0.8rem;
+}
+/* Patient turns get a green wash so the transcript reads as a conversation, not one column of text. */
+.turn.patient {
+  background: color-mix(in srgb, var(--leaf-2) 60%, transparent);
+  border-radius: 0 10px 10px 0;
+  padding: 8px 12px 8px 14px;
+}
+.turns .empty .howto {
+  text-align: left;
+  margin: 0;
+  padding-left: 1.2rem;
+  display: grid;
+  gap: 10px;
+  color: var(--ink);
+  line-height: 1.45;
+}
+.turns .empty {
+  max-width: 46ch;
+}
+.howto .doc {
+  color: var(--carbon);
+}
+.howto .pat {
+  color: var(--leaf);
+}
+/* Doctor mic says what it does, and what it is doing. */
+.mic.wide {
+  width: auto;
+  border-radius: 999px;
+  padding: 0 18px 0 14px;
+  display: inline-flex;
+  gap: 6px;
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+.mic.wide svg {
+  width: 22px;
+  height: 22px;
+}
+/* Turns green once the level meter has actually heard a voice, so a dead mic is obvious. */
+.heard-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.45);
+}
+.heard-dot.on {
+  background: #7dffb6;
+  box-shadow: 0 0 0 3px rgba(125, 255, 182, 0.35);
+}

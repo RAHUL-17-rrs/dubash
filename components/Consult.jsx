@@ -75,6 +75,19 @@ export default function Consult({ demo }) {
     a.onended = a.onerror = next;
     a.play().catch(next);
   }
+  // Tapping a mic while Dubash is still talking cuts it off, so the next speaker never waits or gets dropped.
+  function stopAudio() {
+    queue.current = [];
+    player.current?.pause();
+    player.current = null;
+    mic.pause(false);
+  }
+  function listen(side) {
+    stopAudio();
+    setError('');
+    return mic.start(side);
+  }
+
   async function say(text, toPatient) {
     const r = await fetch('/api/speak', {
       method: 'POST',
@@ -112,7 +125,10 @@ export default function Consult({ demo }) {
       const r = await fetch('/api/turn', { method: 'POST', body: fd });
       const j = await r.json();
       if (!r.ok) throw new Error(j.error || `Turn failed (${r.status})`);
-      if (j.empty) return setTurns((ts) => ts.filter((t) => t.id !== id));
+      if (j.empty) {
+        setTurns((ts) => ts.filter((t) => t.id !== id));
+        return setError(side === 'patient' ? 'Nothing was heard from the patient. Hold the phone closer and tap their mic again.' : 'Nothing was heard. Tap the mic, speak, then pause: it sends by itself.');
+      }
       patch(id, { ...j, status: 'done' });
       play(j.audio);
     } catch (e) {
@@ -326,7 +342,11 @@ export default function Consult({ demo }) {
       <section className="pane patient" aria-label="Patient side" lang={lang.slice(0, 2)}>
         <div className="pane-in">
           <div className="p-head">
-            <span className="p-lang">{L.native}</span>
+            <span className="role patient">
+              <PatientIcon />
+              <span lang={lang.slice(0, 2)}>{L.patient}</span>
+              <small>Patient · {L.name}</small>
+            </span>
           </div>
           <PatientView turn={shown} focus={focus} checking={checking} />
           <div className="p-actions">
@@ -339,12 +359,13 @@ export default function Consult({ demo }) {
           <button
             className={`mic big ${mic.side === 'patient' || teach?.status === 'listening' ? 'on' : ''}`}
             style={{ '--lvl': mic.side === 'patient' ? mic.level : 0 }}
-            onClick={() => (mic.side === 'patient' ? mic.stop() : demo ? !autoplay && demoNext() : mic.start('patient'))}
+            onClick={() => (mic.side === 'patient' ? mic.stop() : demo ? !autoplay && demoNext() : listen('patient'))}
             aria-pressed={patientListening}
             aria-label={`${L.speak} (patient microphone)`}
           >
-            <MicIcon />
-            <span>{L.speak}</span>
+            {mic.side === 'patient' ? <StopIcon /> : <MicIcon />}
+            <span lang={lang.slice(0, 2)}>{L.speak}</span>
+            {mic.side === 'patient' && <span className={`heard-dot ${mic.heard ? 'on' : ''}`} aria-hidden />}
           </button>
           </div>
         </div>
@@ -356,10 +377,11 @@ export default function Consult({ demo }) {
           <Link href="/" className="mark small">
             Dubash
           </Link>
-          <span className="pill">
-            {L.name} <span lang={lang.slice(0, 2)}>{L.native}</span>
+          <span className="role doctor">
+            <DoctorIcon />
+            Doctor <small>English</small>
           </span>
-          <span className="pill quiet">{voice.kind === 'clone' ? 'Your voice' : `Voice: ${voice.name}`}</span>
+          <span className="pill quiet" title="The voice the patient hears">Patient hears: {voice.kind === 'clone' ? 'your voice' : voice.name}</span>
           <div className="d-actions">
             {!demo && (
               <label className="switch">
@@ -438,7 +460,21 @@ export default function Consult({ demo }) {
         <ol className="turns" ref={listRef} aria-live="polite">
           {turns.length === 0 && (
             <li className="empty">
-              {demo ? 'Press Next or Play all to start the consult.' : mic.handsFree ? 'Listening. Just talk; Dubash works out who is speaking.' : 'Tap a microphone, or type below.'}
+              {demo ? (
+                'Press Next or Play all to start the consult.'
+              ) : mic.handsFree ? (
+                'Listening. Just talk; Dubash works out who is speaking.'
+              ) : (
+                <ol className="howto">
+                  <li>
+                    <b className="doc">Doctor</b> taps the blue <b>Speak</b> button below and talks in English. Pause when done: it sends by itself.
+                  </li>
+                  <li>
+                    <b className="pat">Patient</b> taps the green <b lang={lang.slice(0, 2)}>{L.speak}</b> button on their side and talks in {L.name}.
+                  </li>
+                  <li>Each hears the other in their own language. Anything Dubash is unsure of waits here for you.</li>
+                </ol>
+              )}
             </li>
           )}
           {turns.map((t) => (
@@ -458,15 +494,16 @@ export default function Consult({ demo }) {
           >
             <button
               type="button"
-              className={`mic ${mic.side === 'doctor' ? 'on' : ''}`}
+              className={`mic wide ${mic.side === 'doctor' ? 'on' : ''}`}
               style={{ '--lvl': mic.side === 'doctor' ? mic.level : 0 }}
-              onClick={() => (mic.side === 'doctor' ? mic.stop() : ((target.current = 'turn'), mic.start('doctor')))}
+              onClick={() => (mic.side === 'doctor' ? mic.stop() : ((target.current = 'turn'), listen('doctor')))}
               aria-pressed={mic.side === 'doctor'}
               aria-label={mic.side === 'doctor' ? 'Stop and interpret' : 'Doctor microphone'}
             >
-              <MicIcon />
+              {mic.side === 'doctor' ? <StopIcon /> : <MicIcon />}
+              <span>{mic.side === 'doctor' ? (mic.heard ? 'Hearing you' : 'Listening') : 'Speak'}</span>
             </button>
-            <input value={typed} onChange={(e) => setTyped(e.target.value)} placeholder={mic.side === 'doctor' ? 'Listening… tap the mic again to send' : 'Or type what you want to say'} aria-label="Type a doctor turn" />
+            <input value={typed} onChange={(e) => setTyped(e.target.value)} placeholder={mic.side === 'doctor' ? 'Talk, then pause; it sends by itself (or tap Stop)' : mic.side === 'patient' ? 'Patient is speaking…' : 'Or type what you want to say'} aria-label="Type a doctor turn" />
             <button className="btn small" disabled={!typed.trim()}>
               Send
             </button>
@@ -921,4 +958,21 @@ function sameStrength(name, dose) {
   const inName = new Set(nums(name));
   const n = nums(dose);
   return n.length > 0 && n.every((x) => inName.has(x));
+}
+
+function StopIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+      <rect x="6" y="6" width="12" height="12" rx="2.5" fill="currentColor" />
+    </svg>
+  );
+}
+
+function PatientIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+      <circle cx="12" cy="8" r="4" fill="none" stroke="currentColor" strokeWidth="1.8" />
+      <path d="M4 21a8 8 0 0 1 16 0" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  );
 }

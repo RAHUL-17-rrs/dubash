@@ -43,7 +43,7 @@ Dubash is built around that failure mode. It doesn't just translate; it refuses 
 
 | # | Feature | What happens |
 |---|---|---|
-| 1 | **Live consult screen** | Split screen. The patient's half is rotated 180°, so each person reads their own side across the table. Hands-free voice detection, or tap-to-talk on each side. |
+| 1 | **Live consult screen** | Split screen: a green patient half (labelled in the patient's own script) and a blue doctor half. On a phone the patient half is rotated 180° so each person reads their own side across the table. Tap-to-talk on each side sends by itself when the speaker pauses; tapping a mic also cuts off Dubash if it is still talking. Hands-free mode detects voice automatically. |
 | 2 | **Speaker by language** | Prisma v3.0 is given both languages (e.g. `en-IN,te-IN`) and reports which one it heard. The patient's language means the patient spoke; anything else is the doctor. No speaker-ID model needed. |
 | 3 | **Faithful interpretation** | First person, spoken register, digits kept. Patient → doctor turns also surface **red flags** (chest pain, bleeding, pregnancy…). |
 | 4 | **Safety layer** | Dose lock, plain-language rewrite of shorthand, back-translation, holds on low confidence or clashes with what the patient said earlier. [Details below.](#safety-layer) |
