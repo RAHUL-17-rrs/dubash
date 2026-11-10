@@ -20,9 +20,9 @@ Live: https://dubash-seven.vercel.app (auto-deploys from GitHub main)
       README rewrite; docs/pitch.md
 
 ## Open (needs user)
-- [ ] Run the new routes against real keys before merging: /api/detect, /api/simplify, /api/ask, /api/strip, and the new
-      `facts` / `clarify` interpreter fields (exercised so far by the scripted demo, unit tests, and scripts/e2e-mock.mjs
-      with stand-in providers; never with real Prisma / Timbre / LLM output)
+- [x] New routes run against real Gnani + OpenAI gpt-4.1 with synthetic inputs (see README, "What has and has not been verified")
+- [ ] Try real voices (accents, clinic noise) and a real photographed medicine strip; only Timbre-made clips and clean labels so far
+- [ ] Rotate the Gnani and OpenAI keys that were shared in chat for the test run
 - [ ] Native-speaker review of lib/phrases.js (fixed phrases in 9 languages)
 - [ ] Rate-limit the API routes (Vercel firewall rule) before wider sharing
 - [x] Set GNANI_API_KEY and OPENAI_API_KEY in Vercel; real consult tested end to end on the live site

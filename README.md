@@ -306,9 +306,27 @@ Stated plainly, because this is a safety tool:
   discard, clarify buttons, a clash with a fact from the last visit's slip, "I didn't understand", family turns, language
   detection, teach-back round 2, ask-the-slip (answered, refused, invented number replaced), and the strip check. This
   proves the wiring, the schemas and every decision made in code.
-- **Not yet run against real models:** what Prisma, Timbre and the interpreter actually return for the newest routes
-  (`/api/detect`, `/api/simplify`, `/api/ask`, `/api/strip`) and for the new `facts` and `clarify` fields. The stand-ins
-  answer the way the prompts ask; real models may not, so run one session with real Gnani and LLM keys before relying on them.
+- **Run against real Gnani (Prisma v3.0, Timbre v3.0) and OpenAI `gpt-4.1`, one session, synthetic inputs only:**
+  - Timbre spoke the fixed "allergy" phrase in all ten patient languages; Prisma `indic-auto` then named the language of
+    each clip correctly (Hinglish as `hi-IN`, as designed) and transcribed it.
+  - Speaker by language, patient, family and doctor sides, and the Hinglish re-hear in Roman script all worked on real audio.
+  - Read-back fired on prescriptions; the allergy pinned from a "last visit" held an amoxicillin turn with no history in
+    the request; a control prescription was not held.
+  - The interpreter returned patient facts (allergy, condition, current medicine, pregnancy) and red flags.
+  - Bengali output used native digits (`২`, `৩০`) and passed the dose lock, which is exactly the case the digit folding is for.
+  - "I didn't understand" returned shorter sentences that passed the dose lock. Teach-back round 2 returned exactly the
+    missed items, in order. Ask-the-slip answered two answerable questions and refused three it should refuse.
+  - The strip check read three synthetic pack labels: match, wrong strength, not on the slip.
+  - Three things the real run changed: a turn is now held whenever the model attaches a clarifying question (it did so at
+    *medium* confidence, which was not held before); the read-back card shows the sentence as well as the table (the
+    table alone dropped "1 tablet"); the note's follow-up keeps the return date alongside the teach-back result.
+- **Seen in that run and worth knowing:**
+  - Whether the model asks a clarifying question depends on context: "take it as before" was questioned at the start of
+    a consult and not after a prescription. Treat the clarify buttons as a help, not a guarantee.
+  - Prisma returned number *words* for one English clip ("one tablet, three times a day"); the interpreter's plain
+    rewrite turned them into digits before the dose lock ran. The speech clips were synthesised by Timbre, so real
+    voices, accents and clinic noise remain untested.
+  - A real photographed strip (glare, curved foil, small print) has not been tried, only clean synthetic labels.
 - **Awaiting native-speaker review:** the Telugu demo script and the fixed phrases in every patient language (`lib/phrases.js`).
 
 ## Limitations and out of scope

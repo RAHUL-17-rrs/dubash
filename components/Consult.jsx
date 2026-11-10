@@ -998,6 +998,8 @@ function Turn({ t, lang, onSpeak, onDiscard, onRetry, onClarify }) {
       {t.hold && t.readback && (
         <div className="rx" role="group" aria-label="Read-back: confirm before the patient hears it">
           <span className="rx-t">Read-back. Is this what you prescribed?</span>
+          {/* The sentence as Dubash understood it: the table can drop a detail ("1 tablet") that the sentence keeps. */}
+          <p className="rx-said">{i.plain_source || t.text}</p>
           <table>
             <tbody>
               {i.medicines.map((m) => (
@@ -1029,7 +1031,7 @@ function Turn({ t, lang, onSpeak, onDiscard, onRetry, onClarify }) {
               : !t.lock.ok
                 ? 'The numbers did not survive translation, so this was not spoken.'
                 : 'Dubash is not sure of this one, so it was not spoken.'}{' '}
-            Rephrase, or check and send it.
+            {i.clarify?.options?.length >= 2 ? 'Tap what you meant, or rephrase.' : 'Rephrase, or check and send it.'}
           </span>
           {(i.conflicts || []).map((c) => (
             <span className="clash" key={c}>
