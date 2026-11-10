@@ -5,7 +5,7 @@
 **Live demo:** https://dubash-seven.vercel.app · Built for the **Gnani Great Indian AI Internship Challenge** · #GnaniAI #GreatIndianAIInternshipChallenge
 
 One phone lies on the consultation table. The doctor speaks English or Hinglish; the patient speaks Telugu, Tamil,
-Kannada, Hindi, Bengali, Malayalam, Marathi, Gujarati or Punjabi. Dubash listens, works out **who** spoke, interprets
+Kannada, Hindi, Bengali, Malayalam, Marathi, Gujarati, Punjabi or Hinglish. Dubash listens, works out **who** spoke, interprets
 both ways, says the doctor's words to the patient **in the doctor's own (cloned, consented) voice**, and **checks every
 dose before it reaches the patient**. At the end it writes a cited clinical note and a take-home prescription slip
 (a *parchi*) in the patient's language, with audio and a QR code.
@@ -45,6 +45,7 @@ Dubash is built around that failure mode. It doesn't just translate; it refuses 
 |---|---|---|
 | 1 | **Live consult screen** | Split screen: a green patient half (labelled in the patient's own script) and a blue doctor half. On a phone the patient half is rotated 180° so each person reads their own side across the table. Tap-to-talk on each side sends by itself when the speaker pauses; tapping a mic also cuts off Dubash if it is still talking. Hands-free mode detects voice automatically. |
 | 2 | **Speaker by language** | Prisma v3.0 is given both languages (e.g. `en-IN,te-IN`) and reports which one it heard. The patient's language means the patient spoke; anything else is the doctor. No speaker-ID model needed. |
+| 2b | **Hinglish** | A patient language of its own: Gnani has no Hinglish code, so Prisma `en-IN` transcribes it in Roman script (the way people type it), Timbre's `hi-IN` voice speaks it, and the interpreter writes Roman-script Hinglish. In auto mode it is detected as `hi-IN`, then re-heard with `en-IN` so the transcript stays in Roman script. Use the two mic buttons: a doctor who also speaks Hinglish can be mistaken for the patient. |
 | 3 | **Faithful interpretation** | First person, spoken register, digits kept. Patient → doctor turns also surface **red flags** (chest pain, bleeding, pregnancy…). |
 | 4 | **Safety layer** | Dose lock, plain-language rewrite of shorthand, back-translation, holds on low confidence or clashes with what the patient said earlier. [Details below.](#safety-layer) |
 | 5 | **Doctor's own voice** | The doctor records 5–30 s of consented speech. Gnani's voice-clone endpoint turns it into a speaker embedding, and every doctor → patient line is spoken in that voice, in the patient's language. |
