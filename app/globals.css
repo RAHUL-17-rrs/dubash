@@ -2743,3 +2743,8 @@ html {
     padding-bottom: 12px;
   }
 }
+
+.rx-said {
+  font-size: 1.02rem;
+  font-weight: 600;
+}
