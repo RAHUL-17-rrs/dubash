@@ -49,7 +49,7 @@ Dubash is built around that failure mode. It doesn't just translate; it refuses 
 | 4 | **Safety layer** | Dose lock, plain-language rewrite of shorthand, back-translation, holds on low confidence or clashes with what the patient said earlier. [Details below.](#safety-layer) |
 | 5 | **Doctor's own voice** | The doctor records 5–30 s of consented speech. Gnani's voice-clone endpoint turns it into a speaker embedding, and every doctor → patient line is spoken in that voice, in the patient's language. |
 | 6 | **Teach-back** | The patient retells the plan in their own words. Each plan item is marked understood / partial / missed / wrong, and the missed parts are re-explained with audio. |
-| 7 | **Wrap-up** | An English clinical note where **every line cites the turn it came from** (and code verifies the citations exist), plus a take-home slip in the patient's language: medicines, how to take them, tests, warning signs, next visit. It comes with audio, a picture card and a QR code that opens the slip on the patient's phone. |
+| 7 | **Wrap-up** | An English clinical note where **every line cites the turn it came from** (and code verifies the citations exist), plus a take-home slip in the patient's language (every number on both is checked against what was actually said): medicines, how to take them, tests, warning signs, next visit. It comes with audio, a picture card and a QR code that opens the slip on the patient's phone. |
 | 8 | **Zero-key demo** | A scripted 12-turn Telugu consultation runs through the exact same UI, with pre-baked Gnani voices, so anyone can try it without a microphone or keys. |
 | 9 | **Latency chips** | Each turn shows how long STT, interpretation and voice took. |
 
@@ -93,7 +93,9 @@ All of this happens in **one request** to `POST /api/turn`:
 | **Low confidence** | The model reports `confidence: low` on garbled or ambiguous input. | Held, with a "please rephrase" prompt. |
 | **Clash** | The doctor's instruction contradicts something the patient said earlier (e.g. prescribing amoxicillin after a penicillin allergy). | Held until the doctor decides. |
 
-A held turn is **never spoken to the patient** until the doctor explicitly releases it.
+| **Wrap-up grounding** | Every number the model writes into the clinical note or the take-home slip (doses, counts, days, review dates) must appear in the turns that line cites. Slip lines are checked against the note line for the same drug. Done in code (`lib/verify.js`), not by a second model call. | Flagged in red to the doctor ("Check before printing"), naming the number and the turn. |
+
+A held turn is **never spoken to the patient** until the doctor explicitly releases it, and nothing the model invents at wrap-up reaches the printed slip unflagged.
 
 ## Models used
 
@@ -138,6 +140,7 @@ lib/
   medical.js             languages, voices, medical keyterms, shorthand, dose lock
   demo.js                scripted Telugu consult for the zero-key demo
   slip.js                slip <-> URL fragment encoding
+  verify.js              wrap-up grounding: numbers on note/slip must have been said in the cited turns
   *.test.mjs             unit tests (node --test)
 scripts/
   bake-demo.mjs          generates the demo's audio with Gnani Timbre
@@ -200,13 +203,13 @@ The microphone needs HTTPS, which Vercel provides. `/api/turn` sets `maxDuration
 | `POST /api/speak` | `{ text, lang, embedding?, voice? }` | `audio/mpeg` |
 | `POST /api/clone` | multipart: `audio` (5–30 s), `consent=yes` | `{ embedding: { embedding, shape, dtype } }` (kept in the browser, never stored) |
 | `POST /api/teachback` | multipart: `instructions` (JSON), `audio` or `retelling`, `patientLang` | `{ retelling, items: [{ status: understood/partial/missed/wrong, re_explain, … }], summary_for_doctor }` |
-| `POST /api/note` | `{ turns, patientLang, teachback? }` | `{ note, take_home }`; citations to turns that don't exist are dropped |
+| `POST /api/note` | `{ turns, patientLang, teachback? }` | `{ note, take_home, issues }`; citations to turns that don't exist are dropped, and each medicine/plan line carries `unsaid` (numbers not found in its cited turns) |
 | `GET /api/status` | — | `{ gnani: boolean, llm: { name, model } \| null }` |
 
 ## Testing
 
 ```bash
-node --test lib/*.test.mjs   # dose lock + slip encoding
+node --test lib/*.test.mjs   # dose lock, wrap-up grounding, slip encoding
 npm run build                # production build
 npm run shots                # Playwright screenshots of every screen (needs a running server)
 ```

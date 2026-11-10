@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useMic } from './useMic';
 import { LANGUAGES } from '@/lib/medical';
 import { DEMO } from '@/lib/demo';
+import { verifyWrap } from '@/lib/verify';
 import baked from '@/public/demo/baked.json';
 import QRCode from 'qrcode';
 import Slip from './Slip';
@@ -202,7 +203,7 @@ export default function Consult({ demo }) {
   async function wrapUp() {
     mic.stop();
     await mic.setHandsFree(false);
-    if (demo) return setWrap({ status: 'done', ...DEMO.note });
+    if (demo) return setWrap({ status: 'done', ...verifyWrap(DEMO.note, DEMO.turns.map((t, i) => ({ id: `t${i + 1}`, text: t.text, plain: t.interp?.plain_source }))) });
     setWrap({ status: 'writing' });
     const done = turnsRef.current.filter((t) => t.status === 'done' && !t.discarded);
     try {
@@ -755,9 +756,12 @@ function Wrap({ wrap, lang, demo, onClose, onRead }) {
               <table>
                 <tbody>
                   {wrap.note.medicines.map((m) => (
-                    <tr key={m.name}>
+                    <tr key={m.name} className={m.unsaid?.length ? 'unsaid' : ''}>
                       <th>{m.name}</th>
-                      <td>{[m.dose, m.frequency, m.timing, m.duration].filter(Boolean).join(', ')}</td>
+                      <td>
+                        {[m.dose, m.frequency, m.timing, m.duration].filter(Boolean).join(', ')}
+                        {m.unsaid?.length > 0 && <span className="unsaid-tag">not said: {m.unsaid.join(', ')}</span>}
+                      </td>
                       <td>
                         <span className="cite">{m.turns.join(' ')}</span>
                       </td>
@@ -777,9 +781,23 @@ function Wrap({ wrap, lang, demo, onClose, onRead }) {
               )}
               <h4>Follow-up</h4>
               <p>{wrap.note.follow_up}</p>
-              <p className="hint">Each line cites the turns it came from. Lines without a valid citation are flagged for review.</p>
+              <p className="hint">Each line cites the turns it came from. Lines without a valid citation, and numbers not said in the cited turns, are flagged for review.</p>
             </article>
-            <Slip takeHome={wrap.take_home} lang={lang} onListen={onRead} qr={qr} />
+            <div className="slip-col">
+              {wrap.issues?.length > 0 ? (
+                <div className="grounding bad" role="alert">
+                  <strong>Check before printing.</strong> These numbers were not said in the consult:
+                  <ul>
+                    {wrap.issues.map((i) => (
+                      <li key={i}>{i}</li>
+                    ))}
+                  </ul>
+                </div>
+              ) : (
+                wrap.issues && <p className="grounding ok">Every dose, count and day on the note and the slip was said in the consult.</p>
+              )}
+              <Slip takeHome={wrap.take_home} lang={lang} onListen={onRead} qr={qr} />
+            </div>
           </div>
         )}
       </div>
@@ -795,6 +813,7 @@ function NoteRows({ title, rows }) {
         {rows.map((r) => (
           <li key={r.text} className={r.turns.length ? '' : 'uncited'}>
             {r.text} <span className="cite">{r.turns.length ? r.turns.join(' ') : 'no source'}</span>
+            {r.unsaid?.length > 0 && <span className="unsaid-tag">not said: {r.unsaid.join(', ')}</span>}
           </li>
         ))}
       </ul>

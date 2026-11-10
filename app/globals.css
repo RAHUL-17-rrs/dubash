@@ -1119,7 +1119,7 @@ button {
 /* Grid items default to min-width:auto, so a wide table or long word would push the column past a phone screen. */
 .wrap-grid > * {
   min-width: 0;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 .note h3 {
   font-size: 1.25rem;
@@ -1440,4 +1440,41 @@ button {
   .slip-qr * {
     visibility: visible;
   }
+}
+
+/* Wrap-up grounding check (lib/verify.js): numbers on the note or slip that nobody said. */
+.slip-col {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+.grounding {
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 0.9rem;
+}
+.grounding.ok {
+  background: var(--leaf-2);
+  color: var(--leaf);
+  font-weight: 600;
+}
+.grounding.bad {
+  background: var(--stamp-2);
+  color: var(--stamp);
+  border-left: 4px solid var(--stamp);
+}
+.grounding.bad ul {
+  margin: 6px 0 0;
+  padding-left: 1.1rem;
+}
+.unsaid-tag {
+  margin-left: 6px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--stamp);
+  background: var(--stamp-2);
+  padding: 0 5px;
+  border-radius: 4px;
+  white-space: nowrap;
 }

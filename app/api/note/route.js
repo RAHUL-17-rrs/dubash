@@ -1,6 +1,7 @@
 import { json } from '@/lib/llm';
 import { notePrompt, keepRealCitations } from '@/lib/prompts';
 import { route } from '@/lib/http';
+import { verifyWrap } from '@/lib/verify';
 
 export const maxDuration = 60;
 
@@ -9,5 +10,6 @@ export const POST = route(async (req) => {
   const { turns = [], patientLang = 'te-IN', teachback = null } = await req.json();
   if (!turns.length) return Response.json({ error: 'No turns yet' }, { status: 400 });
   const out = await json({ ...notePrompt({ turns, patientLang, teachback }), maxTokens: 6000 });
-  return Response.json({ note: keepRealCitations(out.note, turns), take_home: out.take_home });
+  // Citations must point at real turns, and every number must have been said in them.
+  return Response.json(verifyWrap({ note: keepRealCitations(out.note, turns), take_home: out.take_home }, turns));
 });
